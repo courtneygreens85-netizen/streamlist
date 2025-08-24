@@ -175,25 +175,7 @@ export default function StreamList() {
         : (i.completedAt && i.completedAt !== "Not completed yet" ? Date.parse(i.completedAt) : null),
   });
 
-  const mergeTwo = (current, incoming) => {
-    const title = current.title || incoming.title;
-    const genre = current.genre || incoming.genre || "";
-    const completed = current.completed || incoming.completed;
-    const createdAt = Math.min(
-      Number.isFinite(current.createdAt) ? current.createdAt : Date.now(),
-      Number.isFinite(incoming.createdAt) ? incoming.createdAt : Date.now()
-    );
-    let completedAt = null;
-    const a = Number.isFinite(current.completedAt) ? current.completedAt : null;
-    const b = Number.isFinite(incoming.completedAt) ? incoming.completedAt : null;
-    if (a && b) completedAt = Math.max(a, b);
-    else if (a) completedAt = a;
-    else if (b) completedAt = b;
-
-    return { ...current, title, genre, completed, createdAt, completedAt };
-  };
-
-  // ⬇️ NEW: Ignore incoming IDs entirely. If title exists → skip. Else add with next sequential ID.
+  // Ignore incoming IDs. If title exists → skip. Else add with next sequential ID.
   const mergeLists = (existing, incomingRaw) => {
     const incoming = incomingRaw.map(normalizeItem);
 
@@ -209,11 +191,11 @@ export default function StreamList() {
       const tkey = normalizeTitle(inc.title);
 
       if (byTitle.has(tkey)) {
-        // 🚫 duplicate title → ignore (no overwrite, no new row)
+        // duplicate title → ignore (no overwrite, no new row)
         continue;
       }
 
-      // ✅ brand-new title → assign next sequential numeric ID; ignore incoming id
+      // brand-new title → assign next sequential numeric ID; ignore incoming id
       nextId += 1;
       const withId = {
         ...inc,
@@ -321,10 +303,37 @@ export default function StreamList() {
   /* ---------- Render ---------- */
   return (
     <section className="page" onClick={onBackgroundClick}>
-      <h1 className="title">
-        <span className="material-icons title-icon">playlist_add_check</span>
-        StreamList
-      </h1>
+      {/* Title and Import/Export on the same row */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 12,
+        }}
+      >
+        <h1 className="title" style={{ margin: 0 }}>
+          <span className="material-icons title-icon">playlist_add_check</span>
+          StreamList
+        </h1>
+
+        <div style={{ display: "flex", gap: 8 }}>
+          <ExportMenu
+            onCSV={() => exportCSV()}
+            onJSON={() => exportJSON()}
+            show={showExportMenu}
+            setShow={setShowExportMenu}
+            hideOther={() => setShowImportMenu(false)}
+          />
+          <ImportMenu
+            onCSV={() => onChooseImportCSV()}
+            onJSON={() => onChooseImportJSON()}
+            show={showImportMenu}
+            setShow={setShowImportMenu}
+            hideOther={() => setShowExportMenu(false)}
+          />
+        </div>
+      </div>
 
       {/* Add form */}
       <form className="form" onSubmit={submit}>
@@ -378,6 +387,9 @@ export default function StreamList() {
           <button className={`chip ${filter === "all" ? "chip-active" : ""}`} onClick={() => setFilter("all")} role="tab" aria-selected={filter === "all"}>
             <span className="material-icons chip-icon">list</span> All
           </button>
+        </div>
+
+        <div className="filters" role="tablist" aria-label="Filter items">
           <button className={`chip ${filter === "active" ? "chip-active" : ""}`} onClick={() => setFilter("active")} role="tab" aria-selected={filter === "active"}>
             <span className="material-icons chip-icon">radio_button_unchecked</span> Active
           </button>
@@ -442,24 +454,6 @@ export default function StreamList() {
           ))}
         </ul>
       )}
-
-      {/* Centered Import/Export */}
-      <div style={{ display: "flex", justifyContent: "center", marginTop: 14 }}>
-        <ExportMenu
-          onCSV={() => exportCSV()}
-          onJSON={() => exportJSON()}
-          show={showExportMenu}
-          setShow={setShowExportMenu}
-          hideOther={() => setShowImportMenu(false)}
-        />
-        <ImportMenu
-          onCSV={() => onChooseImportCSV()}
-          onJSON={() => onChooseImportJSON()}
-          show={showImportMenu}
-          setShow={setShowImportMenu}
-          hideOther={() => setShowExportMenu(false)}
-        />
-      </div>
 
       {/* Hidden file inputs */}
       <input
